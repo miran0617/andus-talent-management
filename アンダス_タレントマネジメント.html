@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧠 アンダス タレントマネジメント</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --brand: #1E3A5F;
+    --accent: #2E75B6;
+    --accent-light: #E8F0F8;
+    --sales: #F97316;
+    --marketing: #EAB308;
+    --admin: #3B82F6;
+    --exec: #8B5CF6;
+    --green: #22C55E;
+    --red: #EF4444;
+    --gray: #6B7280;
+    --bg: #F0F4F8;
+    --white: #FFFFFF;
+    --border: #D1D5DB;
+    --text: #111827;
+    --text-light: #6B7280;
+    --sidebar-w: 220px;
+    --header-h: 60px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+  /* ===== LAYOUT ===== */
+  .layout { display: flex; min-height: 100vh; }
+
+  /* ===== SIDEBAR ===== */
+  .sidebar {
+    width: var(--sidebar-w); background: var(--brand); color: white;
+    position: fixed; top: 0; left: 0; height: 100vh;
+    display: flex; flex-direction: column; z-index: 100;
+  }
+  .sidebar-logo {
+    padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sidebar-logo .logo-icon { font-size: 22px; }
+  .sidebar-logo .logo-text { font-size: 13px; font-weight: 700; line-height: 1.3; }
+  .sidebar-logo .logo-sub { font-size: 10px; opacity: 0.6; font-weight: 400; }
+
+  .sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+  .nav-section { padding: 8px 16px 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.5; font-weight: 600; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 20px; cursor: pointer; transition: background 0.15s;
+    font-size: 13px; opacity: 0.8; border-left: 3px solid transparent;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.08); opacity: 1; }
+  .nav-item.active { background: rgba(255,255,255,0.12); opacity: 1; border-left-color: #60A5FA; }
+  .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+  .nav-badge { margin-left: auto; background: #EF4444; color: white; font-size: 10px; border-radius: 10px; padding: 1px 6px; font-weight: 700; }
+
+  .sidebar-bottom { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+  .user-pill { display: flex; align-items: center; gap: 10px; }
+  .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: #60A5FA; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+  .user-info .user-name { font-size: 12px; font-weight: 600; }
+  .user-info .user-role { font-size: 10px; opacity: 0.6; }
+
+  /* ===== MAIN ===== */
+  .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; }
+
+  /* ===== HEADER ===== */
+  .header {
+    height: var(--header-h); background: white; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 24px; gap: 16px;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .header-title { font-size: 16px; font-weight: 700; color: var(--brand); flex: 1; }
+  .header-search {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 12px; width: 240px;
+  }
+  .header-search input { border: none; background: transparent; outline: none; font-size: 13px; width: 100%; }
+  .header-btn {
+    padding: 7px 14px; border-radius: 8px; border: none; cursor: pointer;
+    font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: var(--brand); }
+  .btn-secondary { background: white; color: var(--brand); border: 1px solid var(--border); }
+
+  /* ===== CONTENT ===== */
+  .content { padding: 24px; flex: 1; }
+
+  /* ===== VIEWS ===== */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ===== STATS ROW ===== */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: white; border-radius: 12px; padding: 18px 20px;
+    border: 1px solid var(--border); display: flex; align-items: center; gap: 16px;
+  }
+  .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .stat-icon.blue { background: #EFF6FF; }
+  .stat-icon.orange { background: #FFF7ED; }
+  .stat-icon.yellow { background: #FEFCE8; }
+  .stat-icon.green { background: #F0FDF4; }
+  .stat-value { font-size: 26px; font-weight: 800; color: var(--brand); line-height: 1; }
+  .stat-label { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+
+  /* ===== VIEW TOGGLE ===== */
+  .view-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+  .view-toggle { display: flex; background: white; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .toggle-btn {
+    padding: 7px 14px; border: none; background: transparent; cursor: pointer;
+    font-size: 13px; display: flex; align-items: center; gap: 5px; color: var(--text-light);
+    transition: all 0.15s;
+  }
+  .toggle-btn.active { background: var(--accent); color: white; }
+  .filter-row { display: flex; gap: 8px; margin-left: auto; }
+  .filter-chip {
+    padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);
+    background: white; cursor: pointer; font-size: 12px; color: var(--text-light); transition: all 0.15s;
+  }
+  .filter-chip:hover, .filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+  /* ===== MEMBER GALLERY ===== */
+  .member-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+  .member-card {
+    background: white; border-radius: 12px; border: 1px solid var(--border);
+    overflow: hidden; cursor: pointer; transition: all 0.2s;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .member-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); border-color: var(--accent); }
+  .member-card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+  .member-avatar-wrap { width: 100%; aspect-ratio: 1; position: relative; background: linear-gradient(135deg, #E8F0F8, #C7D9EF); display: flex; align-items: center; justify-content: center; }
+  .member-avatar-initial { font-size: 36px; font-weight: 800; color: var(--brand); opacity: 0.7; }
+  .dept-stripe { position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+  .dept-stripe.sales { background: var(--sales); }
+  .dept-stripe.marketing { background: var(--marketing); }
+  .dept-stripe.admin { background: var(--admin); }
+  .dept-stripe.exec { background: var(--exec); }
+  .dept-stripe.none { background: var(--gray); }
+  .role-badge-wrap { position: absolute; bottom: 6px; right: 6px; }
+  .role-badge {
+    padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700;
+    background: rgba(255,255,255,0.9); color: var(--brand); backdrop-filter: blur(4px);
+  }
+  .member-card-body { padding: 10px 12px; width: 100%; text-align: center; }
+  .member-card-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .member-card-dept { font-size: 11px; color: var(--text-light); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .member-card-base { font-size: 11px; color: var(--text-light); }
+  .member-card-scores { display: flex; gap: 4px; justify-content: center; margin-top: 6px; }
+  .score-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .score-dot.filled { background: var(--accent); }
+  .score-dot.empty { background: var(--border); }
+
+  /* ===== MEMBER LIST ===== */
+  .member-list { background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; display: none; }
+  .member-list.show { display: block; }
+  .list-header { display: grid; grid-template-columns: 2fr 1.2fr 1fr 1fr 1.2fr 0.8fr; gap: 0; background: #F9FAFB; border-bottom: 1px solid var(--border); }
+  .list-header-cell { padding: 10px 16px; font-size: 11px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.04em; }
+  .list-row { display: grid; grid-template-columns: 2fr 1.2fr 1fr 1fr 1.2fr 0.8fr; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
+  .list-row:hover { background: var(--accent-light); }
+  .list-row:last-child { border-bottom: none; }
+  .list-cell { padding: 10px 16px; display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .list-cell.name { font-weight: 600; }
+  .mini-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: white; flex-shrink: 0; }
+  .dept-tag { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .dept-tag.sales { background: #FEF3C7; color: #B45309; }
+  .dept-tag.marketing { background: #FEF9C3; color: #854D0E; }
+  .dept-tag.admin { background: #EFF6FF; color: #1D4ED8; }
+  .dept-tag.exec { background: #F3E8FF; color: #7C3AED; }
+  .dept-tag.none { background: #F3F4F6; color: #6B7280; }
+  .role-tag { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .role-tag.mgr { background: #DBEAFE; color: #1E40AF; }
+  .role-tag.ldr { background: #D1FAE5; color: #065F46; }
+  .role-tag.mbr { background: #F3F4F6; color: #374151; }
+  .role-tag.ceo { background: #EDE9FE; color: #5B21B6; }
+  .base-tag { font-size: 12px; color: var(--text-light); }
+  .eng-tag { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .eng-tag.high { background: #D1FAE5; color: #065F46; }
+  .eng-tag.mid { background: #FEF3C7; color: #B45309; }
+  .eng-tag.low { background: #FEE2E2; color: #991B1B; }
+
+  /* ===== MEMBER DETAIL PANEL ===== */
+  .detail-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200;
+    display: none; align-items: center; justify-content: flex-end;
+  }
+  .detail-overlay.open { display: flex; }
+  .detail-panel {
+    width: 560px; height: 100vh; background: white; overflow-y: auto;
+    box-shadow: -8px 0 32px rgba(0,0,0,0.15);
+    animation: slideIn 0.25s ease;
+  }
+  @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+  .detail-close {
+    position: absolute; top: 16px; right: 16px; width: 32px; height: 32px;
+    border-radius: 50%; background: rgba(0,0,0,0.1); border: none; cursor: pointer;
+    font-size: 16px; display: flex; align-items: center; justify-content: center;
+    color: white; z-index: 10;
+  }
+  .detail-hero { background: linear-gradient(135deg, var(--brand), var(--accent)); padding: 32px 28px 24px; position: relative; color: white; }
+  .detail-avatar { width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.2); border: 3px solid white; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; margin-bottom: 12px; }
+  .detail-name { font-size: 22px; font-weight: 800; }
+  .detail-role-dept { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+  .detail-meta { display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap; }
+  .detail-meta-item { display: flex; align-items: center; gap: 6px; font-size: 12px; opacity: 0.9; }
+  .detail-body { padding: 24px 28px; }
+  .detail-section { margin-bottom: 24px; }
+  .detail-section-title { font-size: 11px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .detail-field label { font-size: 11px; color: var(--text-light); font-weight: 600; display: block; margin-bottom: 3px; }
+  .detail-field p { font-size: 13px; font-weight: 600; color: var(--text); }
+  .detail-field p.empty { color: var(--text-light); font-weight: 400; font-style: italic; }
+  .skill-bars { display: flex; flex-direction: column; gap: 10px; }
+  .skill-bar-row { display: flex; align-items: center; gap: 10px; }
+  .skill-bar-label { font-size: 12px; color: var(--text); width: 140px; flex-shrink: 0; }
+  .skill-bar-track { flex: 1; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+  .skill-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; background: var(--accent); }
+  .skill-bar-score { font-size: 12px; font-weight: 700; color: var(--accent); width: 24px; text-align: right; }
+  .chart-wrap { height: 220px; display: flex; align-items: center; justify-content: center; }
+  .text-box { background: var(--accent-light); border-radius: 8px; padding: 12px 14px; font-size: 13px; line-height: 1.6; color: var(--text); }
+  .text-box.empty { color: var(--text-light); font-style: italic; }
+  .history-list { display: flex; flex-direction: column; gap: 8px; }
+  .history-item { display: flex; gap: 12px; align-items: flex-start; }
+  .history-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 4px; }
+  .history-content { font-size: 12px; line-height: 1.5; }
+  .history-date { color: var(--text-light); }
+
+  /* ===== SKILL MAP VIEW ===== */
+  .skill-matrix { background: white; border-radius: 12px; border: 1px solid var(--border); overflow: auto; }
+  .skill-matrix table { width: 100%; border-collapse: collapse; min-width: 700px; }
+  .skill-matrix th { padding: 10px 14px; font-size: 11px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.04em; background: #F9FAFB; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+  .skill-matrix td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+  .skill-matrix tr:last-child td { border-bottom: none; }
+  .skill-matrix tr:hover td { background: var(--accent-light); }
+  .skill-dots { display: flex; gap: 3px; }
+  .skill-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .skill-dot.filled { background: var(--accent); }
+  .skill-dot.half { background: #93C5FD; }
+  .skill-dot.empty { background: #E5E7EB; }
+  .skill-level { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 6px; }
+  .skill-level.lv1 { background: #F3F4F6; color: #6B7280; }
+  .skill-level.lv2 { background: #DBEAFE; color: #1D4ED8; }
+  .skill-level.lv3 { background: #D1FAE5; color: #065F46; }
+  .skill-level.lv4 { background: #FEF3C7; color: #B45309; }
+  .skill-level.lv5 { background: #EDE9FE; color: #5B21B6; }
+
+  /* ===== 1on1 VIEW ===== */
+  .onon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .onon-card { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 18px; cursor: pointer; transition: all 0.2s; }
+  .onon-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+  .onon-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .onon-name { font-size: 15px; font-weight: 700; }
+  .onon-date { font-size: 11px; color: var(--text-light); }
+  .onon-cond { font-size: 20px; }
+  .onon-body { font-size: 12px; color: var(--text-light); line-height: 1.6; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .onon-footer { display: flex; gap: 8px; align-items: center; }
+  .onon-tag { font-size: 11px; color: var(--text-light); background: var(--bg); border-radius: 6px; padding: 2px 8px; }
+
+  /* ===== EVALUATION VIEW ===== */
+  .eval-list { background: white; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+  .eval-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1.2fr; border-bottom: 1px solid var(--border); }
+  .eval-row:last-child { border-bottom: none; }
+  .eval-row.header { background: #F9FAFB; }
+  .eval-cell { padding: 12px 16px; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+  .eval-cell.label { font-weight: 700; color: var(--text-light); text-transform: uppercase; font-size: 11px; letter-spacing: 0.04em; }
+  .eval-score { font-size: 20px; font-weight: 800; color: var(--accent); }
+  .eval-grade { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; }
+  .eval-grade.S { background: #EDE9FE; color: #5B21B6; }
+  .eval-grade.A { background: #DBEAFE; color: #1D4ED8; }
+  .eval-grade.B { background: #D1FAE5; color: #065F46; }
+  .eval-grade.C { background: #FEF3C7; color: #B45309; }
+  .eval-status-chip { padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .eval-status-chip.done { background: #D1FAE5; color: #065F46; }
+  .eval-status-chip.pending { background: #FEF3C7; color: #B45309; }
+  .eval-status-chip.draft { background: #DBEAFE; color: #1D4ED8; }
+
+  /* ===== DASHBOARD VIEW ===== */
+  .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .dash-card { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 20px; }
+  .dash-card.full { grid-column: 1 / -1; }
+  .dash-card-title { font-size: 13px; font-weight: 700; color: var(--brand); margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
+  .dept-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .dept-bar-label { font-size: 12px; width: 110px; flex-shrink: 0; }
+  .dept-bar-track { flex: 1; height: 20px; background: var(--bg); border-radius: 4px; overflow: hidden; display: flex; }
+  .dept-bar-fill { height: 100%; display: flex; align-items: center; padding-left: 8px; font-size: 11px; font-weight: 700; color: white; border-radius: 4px; transition: width 0.5s ease; }
+  .dept-bar-count { font-size: 12px; font-weight: 700; width: 24px; text-align: right; }
+  .ai-suggestion { background: linear-gradient(135deg, var(--accent-light), #EDE9FE); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; }
+  .ai-suggestion:last-child { margin-bottom: 0; }
+  .ai-suggestion-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .ai-suggestion-icon { font-size: 18px; }
+  .ai-suggestion-title { font-size: 13px; font-weight: 700; color: var(--brand); }
+  .ai-suggestion-body { font-size: 12px; color: var(--text); line-height: 1.6; }
+  .ai-tag { display: inline-block; background: var(--accent); color: white; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-right: 4px; }
+
+  /* ===== EMPTY STATE ===== */
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-light); }
+  .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+
+  /* ===== PAGE HEADER ===== */
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .page-title { font-size: 20px; font-weight: 800; color: var(--brand); }
+  .page-subtitle { font-size: 13px; color: var(--text-light); margin-top: 2px; }
+
+  /* ===== RESPONSIVE HINTS ===== */
+  @media (max-width: 900px) {
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .dashboard-grid { grid-template-columns: 1fr; }
+    .detail-panel { width: 100vw; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">🧠</div>
+    <div>
+      <div class="logo-text">アンダス</div>
+      <div class="logo-sub">タレントマネジメント</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">メイン</div>
+    <div class="nav-item active" onclick="showView('dashboard')">
+      <span class="nav-icon">📊</span> ダッシュボード
+    </div>
+    <div class="nav-section">人材管理</div>
+    <div class="nav-item" onclick="showView('members')">
+      <span class="nav-icon">👤</span> メンバー一覧
+    </div>
+    <div class="nav-item" onclick="showView('skills')">
+      <span class="nav-icon">💪</span> スキルマップ
+    </div>
+    <div class="nav-section">育成・評価</div>
+    <div class="nav-item" onclick="showView('onon')">
+      <span class="nav-icon">💬</span> 1on1記録
+      <span class="nav-badge">3</span>
+    </div>
+    <div class="nav-item" onclick="showView('goals')">
+      <span class="nav-icon">🎯</span> 目標管理
+    </div>
+    <div class="nav-item" onclick="showView('eval')">
+      <span class="nav-icon">⭐</span> 評価
+    </div>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="user-pill">
+      <div class="user-avatar">み</div>
+      <div class="user-info">
+        <div class="user-name">浅川海嵐</div>
+        <div class="user-role">マネージャー</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-title" id="headerTitle">📊 ダッシュボード</div>
+    <div class="header-search">
+      <span>🔍</span>
+      <input type="text" placeholder="メンバー・スキルを検索..." id="searchInput" oninput="filterMembers(this.value)">
+    </div>
+    <button class="header-btn btn-secondary" onclick="showView('members')">👤 メンバー追加</button>
+    <button class="header-btn btn-primary" onclick="claudePrompt()">✨ Claudeに聞く</button>
+  </header>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div class="view active" id="view-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title">📊 ダッシュボード</div>
+          <div class="page-subtitle">2026年4月9日時点 · アンダス社全体</div>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-icon blue">👥</div>
+          <div>
+            <div class="stat-value">28</div>
+            <div class="stat-label">総メンバー数</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon orange">🏢</div>
+          <div>
+            <div class="stat-value">3</div>
+            <div class="stat-label">部門数</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon yellow">💬</div>
+          <div>
+            <div class="stat-value">3</div>
+            <div class="stat-label">今月の1on1</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">⭐</div>
+          <div>
+            <div class="stat-value">—</div>
+            <div class="stat-label">直近評価平均</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="dash-card">
+          <div class="dash-card-title">🏢 部門別メンバー構成</div>
+          <div style="height:200px;"><canvas id="deptChart"></canvas></div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-title">📍 拠点別メンバー</div>
+          <div class="dept-bar-row">
+            <div class="dept-bar-label">根塚オフィス</div>
+            <div class="dept-bar-track"><div class="dept-bar-fill" style="width:70%;background:var(--accent);">19名</div></div>
+            <div class="dept-bar-count">19</div>
+          </div>
+          <div class="dept-bar-row">
+            <div class="dept-bar-label">二口オフィス</div>
+            <div class="dept-bar-track"><div class="dept-bar-fill" style="width:15%;background:#8B5CF6;">3名</div></div>
+            <div class="dept-bar-count">3</div>
+          </div>
+          <div class="dept-bar-row">
+            <div class="dept-bar-label">FD</div>
+            <div class="dept-bar-track"><div class="dept-bar-fill" style="width:5%;background:#22C55E;">1名</div></div>
+            <div class="dept-bar-count">1</div>
+          </div>
+          <div class="dept-bar-row">
+            <div class="dept-bar-label">未設定</div>
+            <div class="dept-bar-track"><div class="dept-bar-fill" style="width:18%;background:#D1D5DB;">5名</div></div>
+            <div class="dept-bar-count">5</div>
+          </div>
+          <div style="margin-top:12px;">
+            <div class="dash-card-title">📅 直近の評価面談</div>
+            <div style="font-size:12px;color:var(--text-light);line-height:2;">
+              ✅ 3/30 岡島 芽唯<br>
+              ✅ 3/30 岩坂 理沙<br>
+              ✅ 3/30 廣島 NANA
+            </div>
+          </div>
+        </div>
+        <div class="dash-card full">
+          <div class="dash-card-title">🤖 Claude AIの提案 <span style="font-size:11px;font-weight:400;color:var(--text-light);">（自動分析）</span></div>
+          <div class="ai-suggestion">
+            <div class="ai-suggestion-header">
+              <div class="ai-suggestion-icon">🔍</div>
+              <div class="ai-suggestion-title">スキルギャップの可能性</div>
+            </div>
+            <div class="ai-suggestion-body">
+              <span class="ai-tag">分析</span>
+              セールス部門のメンバーのスキルデータがまだ未入力です。まず <strong>河内・蒔田・金谷</strong> のリーダー陣からスキルスコアを入力してベースラインを作ることをおすすめします。
+            </div>
+          </div>
+          <div class="ai-suggestion">
+            <div class="ai-suggestion-header">
+              <div class="ai-suggestion-icon">💬</div>
+              <div class="ai-suggestion-title">1on1フォローアップ</div>
+            </div>
+            <div class="ai-suggestion-body">
+              <span class="ai-tag">提案</span>
+              3月の評価面談（岡島・岩坂・廣島）が先月実施されました。評価フィードバック後のフォローアップ1on1が未登録です。4月中の実施を検討してください。
+            </div>
+          </div>
+          <div class="ai-suggestion">
+            <div class="ai-suggestion-header">
+              <div class="ai-suggestion-icon">🎯</div>
+              <div class="ai-suggestion-title">Q2 目標設定のタイミング</div>
+            </div>
+            <div class="ai-suggestion-body">
+              <span class="ai-tag">リマインド</span>
+              現在 Q2（4〜6月）が開始しています。チーム全体の Q2 OKRがまだ目標管理DBに登録されていません。今週中に登録することをおすすめします。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MEMBERS ===== -->
+    <div class="view" id="view-members">
+      <div class="page-header">
+        <div>
+          <div class="page-title">👤 メンバープロフィール</div>
+          <div class="page-subtitle" id="memberCount">28名 · カオナビ参考のメンバー管理</div>
+        </div>
+      </div>
+
+      <div class="view-toolbar">
+        <div class="view-toggle">
+          <button class="toggle-btn active" id="galleryBtn" onclick="switchMemberView('gallery')">⊞ ギャラリー</button>
+          <button class="toggle-btn" id="listBtn" onclick="switchMemberView('list')">≡ リスト</button>
+        </div>
+        <div class="filter-row">
+          <div class="filter-chip active" onclick="filterByDept(this,'all')">全員</div>
+          <div class="filter-chip" onclick="filterByDept(this,'sales')">🟠 セールス</div>
+          <div class="filter-chip" onclick="filterByDept(this,'marketing')">🟡 マーケ</div>
+          <div class="filter-chip" onclick="filterByDept(this,'admin')">🔵 管理</div>
+          <div class="filter-chip" onclick="filterByDept(this,'exec')">🟣 経営</div>
+        </div>
+      </div>
+
+      <div class="member-gallery" id="memberGallery"></div>
+
+      <div class="member-list" id="memberList">
+        <div class="list-header">
+          <div class="list-header-cell">名前</div>
+          <div class="list-header-cell">部門</div>
+          <div class="list-header-cell">役職</div>
+          <div class="list-header-cell">拠点</div>
+          <div class="list-header-cell">エンゲージメント</div>
+          <div class="list-header-cell">評価</div>
+        </div>
+        <div id="memberListBody"></div>
+      </div>
+    </div>
+
+    <!-- ===== SKILLS ===== -->
+    <div class="view" id="view-skills">
+      <div class="page-header">
+        <div>
+          <div class="page-title">💪 スキルマップ</div>
+          <div class="page-subtitle">メンバーごとのスキル習熟度（サンプルデータ）</div>
+        </div>
+        <button class="header-btn btn-primary" onclick="alert('スキル定義を追加します（Notion連携）')">＋ スキル追加</button>
+      </div>
+      <div class="skill-matrix">
+        <table>
+          <thead>
+            <tr>
+              <th>メンバー</th>
+              <th>部門</th>
+              <th>セールス力</th>
+              <th>マネジメント</th>
+              <th>企画・マーケ</th>
+              <th>コミュニケーション</th>
+              <th>総合</th>
+            </tr>
+          </thead>
+          <tbody id="skillTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== 1on1 ===== -->
+    <div class="view" id="view-onon">
+      <div class="page-header">
+        <div>
+          <div class="page-title">💬 1on1 記録</div>
+          <div class="page-subtitle">面談履歴・Claudeによる自動メモ整理</div>
+        </div>
+        <button class="header-btn btn-primary" onclick="alert('1on1を新規登録します（Notion連携）')">＋ 1on1追加</button>
+      </div>
+      <div class="onon-grid" id="ononGrid"></div>
+    </div>
+
+    <!-- ===== GOALS ===== -->
+    <div class="view" id="view-goals">
+      <div class="page-header">
+        <div>
+          <div class="page-title">🎯 目標管理（OKR）</div>
+          <div class="page-subtitle">2026 Q2 · チーム・個人目標</div>
+        </div>
+        <button class="header-btn btn-primary" onclick="alert('目標を新規追加します（Notion連携）')">＋ 目標追加</button>
+      </div>
+      <div class="empty-state">
+        <div class="empty-icon">🎯</div>
+        <p>Q2 の目標がまだ登録されていません</p>
+        <p style="margin-top:8px;font-size:12px;">「＋ 目標追加」ボタンから登録するか、Claudeに「Q2の目標を設定して」と依頼してください</p>
+        <button class="header-btn btn-primary" style="margin:16px auto 0;display:flex;" onclick="claudePrompt()">✨ Claudeに目標設定を依頼</button>
+      </div>
+    </div>
+
+    <!-- ===== EVAL ===== -->
+    <div class="view" id="view-eval">
+      <div class="page-header">
+        <div>
+          <div class="page-title">⭐ 評価管理</div>
+          <div class="page-subtitle">2026上半期 評価（サンプルデータ）</div>
+        </div>
+      </div>
+      <div class="eval-list">
+        <div class="eval-row header">
+          <div class="eval-cell label">メンバー</div>
+          <div class="eval-cell label">期間</div>
+          <div class="eval-cell label">自己評価</div>
+          <div class="eval-cell label">上長評価</div>
+          <div class="eval-cell label">総合</div>
+          <div class="eval-cell label">ステータス</div>
+        </div>
+        <div id="evalBody"></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+
+<!-- MEMBER DETAIL PANEL -->
+<div class="detail-overlay" id="detailOverlay" onclick="closeDetail(event)">
+  <div class="detail-panel" id="detailPanel">
+    <button class="detail-close" onclick="document.getElementById('detailOverlay').classList.remove('open')">✕</button>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+</div><!-- /layout -->
+
+<script>
+// ===== DATA =====
+const members = [
+  { id:1, name:'廣岡伸那', dept:'exec', role:'ceo', base:'—', eng:'高い😊', scores:[4,5,4,5], bio:'代表取締役', career:'アンダス社 代表' },
+  { id:2, name:'廣岡香織', dept:'exec', role:'ceo', base:'—', eng:'高い😊', scores:[4,4,5,5], bio:'代表取締役', career:'' },
+  { id:3, name:'浅川海嵐', dept:'marketing', role:'mgr', base:'根塚', eng:'高い😊', scores:[3,4,5,5], bio:'事業戦略・マーケティング・AI推進・人事', career:'2019年10月入社', highlight:true },
+  { id:4, name:'河内湧矢', dept:'sales', role:'mgr', base:'根塚', eng:'高い😊', scores:[5,4,2,4], bio:'セールス部門マネジメント・新規開拓', career:'' },
+  { id:5, name:'蒔田哲平', dept:'sales', role:'ldr', base:'根塚', eng:'普通🙂', scores:[4,3,2,4], bio:'セールスリーダー', career:'' },
+  { id:6, name:'金谷拓実', dept:'sales', role:'ldr', base:'根塚', eng:'普通🙂', scores:[4,3,2,4], bio:'セールスリーダー', career:'' },
+  { id:7, name:'中嶋悠貴', dept:'sales', role:'ldr', base:'根塚', eng:'普通🙂', scores:[4,3,2,3], bio:'セールスリーダー', career:'' },
+  { id:8, name:'砂川海空', dept:'sales', role:'mbr', base:'根塚', eng:'普通🙂', scores:[3,1,1,4], bio:'セールスメンバー', career:'' },
+  { id:9, name:'渋井真翔一', dept:'sales', role:'mbr', base:'根塚', eng:'普通🙂', scores:[3,1,1,3], bio:'セールスメンバー', career:'' },
+  { id:10, name:'上月勇弥', dept:'sales', role:'mbr', base:'根塚', eng:'普通🙂', scores:[3,1,1,3], bio:'セールスメンバー', career:'' },
+  { id:11, name:'斉藤優希', dept:'sales', role:'mbr', base:'根塚', eng:'普通🙂', scores:[3,1,1,3], bio:'セールスメンバー', career:'' },
+  { id:12, name:'石井航平', dept:'sales', role:'mbr', base:'根塚', eng:'普通🙂', scores:[3,1,1,3], bio:'セールスメンバー', career:'' },
+  { id:13, name:'川本友哉', dept:'sales', role:'mbr', base:'根塚', eng:'普通🙂', scores:[2,1,1,3], bio:'セールスメンバー', career:'' },
+  { id:14, name:'みおり', dept:'sales', role:'mbr', base:'根塚', eng:'—', scores:[2,1,1,3], bio:'セールスメンバー', career:'' },
+  { id:15, name:'岡島芽唯', dept:'marketing', role:'ldr', base:'根塚', eng:'高い😊', scores:[2,3,4,5], bio:'マーケ・広報リーダー', career:'3/30 評価面談実施済み' },
+  { id:16, name:'岩坂理沙', dept:'marketing', role:'mbr', base:'根塚', eng:'高い😊', scores:[2,2,3,4], bio:'マーケ・広報メンバー', career:'3/30 評価面談実施済み' },
+  { id:17, name:'廣島NANA', dept:'marketing', role:'mbr', base:'根塚', eng:'高い😊', scores:[2,2,3,4], bio:'マーケ・広報メンバー', career:'3/30 評価面談実施済み' },
+  { id:18, name:'結城陽', dept:'marketing', role:'mbr', base:'FD', eng:'普通🙂', scores:[2,2,4,3], bio:'マーケ・開発メンバー', career:'' },
+  { id:19, name:'藤掛和音', dept:'admin', role:'mgr', base:'二口', eng:'高い😊', scores:[2,4,3,4], bio:'管理部門マネジメント・採用', career:'' },
+  { id:20, name:'秋山健一朗', dept:'admin', role:'mbr', base:'二口', eng:'普通🙂', scores:[2,2,2,3], bio:'管理メンバー', career:'' },
+  { id:21, name:'亀山', dept:'admin', role:'mbr', base:'二口', eng:'普通🙂', scores:[2,2,2,3], bio:'管理メンバー', career:'' },
+  { id:22, name:'山口梓', dept:'none', role:'mbr', base:'—', eng:'—', scores:[2,2,3,3], bio:'', career:'' },
+  { id:23, name:'荒木綾華', dept:'none', role:'mbr', base:'—', eng:'—', scores:[0,0,0,0], bio:'', career:'' },
+  { id:24, name:'黒崎華', dept:'none', role:'mbr', base:'—', eng:'—', scores:[0,0,0,0], bio:'', career:'' },
+  { id:25, name:'大島葵', dept:'none', role:'mbr', base:'—', eng:'—', scores:[0,0,0,0], bio:'', career:'' },
+  { id:26, name:'池田涼香', dept:'none', role:'mbr', base:'—', eng:'—', scores:[0,0,0,0], bio:'', career:'' },
+  { id:27, name:'土田鈴菜', dept:'none', role:'mbr', base:'—', eng:'—', scores:[0,0,0,0], bio:'', career:'' },
+  { id:28, name:'永田美紗', dept:'none', role:'mbr', base:'—', eng:'—', scores:[0,0,0,0], bio:'', career:'' },
+];
+
+const deptLabels = { sales:'セールス', marketing:'マーケ・広報', admin:'管理', exec:'経営', none:'未設定' };
+const roleLabels = { ceo:'代表', mgr:'マネージャー', ldr:'リーダー', mbr:'メンバー' };
+const deptColors = { sales:'#F97316', marketing:'#EAB308', admin:'#3B82F6', exec:'#8B5CF6', none:'#9CA3AF' };
+const engLevels = { '高い😊':'high', '普通🙂':'mid', '低い😐':'low', '—':'mid' };
+
+let currentFilter = 'all';
+let galleryMode = true;
+
+const onon1s = [
+  { member:'岡島芽唯', upper:'浅川海嵐', date:'2026/03/30', cond:'😊絶好調', agenda:'評価面談・Q2目標の方向性・マーケチームの体制について', memo:'3月の取り組みを振り返り。SNS運用の改善が成果につながった点を確認。Q2はリーダーとしてチームをさらに牽引する意欲あり。', next:'Q2目標設定（4/15まで）・新メンバーのオンボーディング計画作成', status:'done' },
+  { member:'岩坂理沙', upper:'浅川海嵐', date:'2026/03/30', cond:'🙂良好', agenda:'評価面談・スキルアップについて・キャリア展望', memo:'業務への取り組み姿勢は高評価。今後のキャリアについてマーケ専門職を希望。スキル学習のための時間確保を検討。', next:'スキル学習プランの作成（Claude支援予定）・4月中旬フォロー面談', status:'done' },
+  { member:'廣島NANA', upper:'浅川海嵐', date:'2026/03/30', cond:'😊絶好調', agenda:'評価面談・SNS運用実績・今後の担当範囲拡大', memo:'Instagram/TikTok運用が好調。フォロワー数・エンゲージメントともに目標達成。広報担当としての役割拡大を提案。', next:'広報戦略の担当範囲見直し案の作成・次回面談4月末', status:'done' },
+];
+
+const evalData = [
+  { name:'岡島芽唯', period:'2026上半期', self:4.5, upper:4.5, grade:'A', status:'done' },
+  { name:'岩坂理沙', period:'2026上半期', self:4.0, upper:4.0, grade:'B', status:'done' },
+  { name:'廣島NANA', period:'2026上半期', self:4.5, upper:4.5, grade:'A', status:'done' },
+  { name:'河内湧矢', period:'2026上半期', self:null, upper:null, grade:null, status:'pending' },
+  { name:'蒔田哲平', period:'2026上半期', self:null, upper:null, grade:null, status:'pending' },
+  { name:'浅川海嵐', period:'2026上半期', self:null, upper:null, grade:null, status:'pending' },
+];
+
+// ===== RENDER FUNCTIONS =====
+
+function getInitial(name) { return name.charAt(0); }
+
+function getDots(score, max=5) {
+  let html = '';
+  for (let i = 1; i <= max; i++) {
+    html += `<div class="score-dot ${i <= score ? 'filled' : 'empty'}"></div>`;
+  }
+  return html;
+}
+
+function getSkillDots(score, max=5) {
+  let html = '<div class="skill-dots">';
+  for (let i = 1; i <= max; i++) {
+    html += `<div class="skill-dot ${i <= score ? 'filled' : 'empty'}"></div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderGallery(data) {
+  const gallery = document.getElementById('memberGallery');
+  gallery.innerHTML = data.map(m => `
+    <div class="member-card" onclick="openDetail(${m.id})">
+      <div class="member-avatar-wrap">
+        <div class="dept-stripe ${m.dept}"></div>
+        <div class="member-avatar-initial">${getInitial(m.name)}</div>
+        <div class="role-badge-wrap"><div class="role-badge">${roleLabels[m.role]}</div></div>
+      </div>
+      <div class="member-card-body">
+        <div class="member-card-name">${m.name}</div>
+        <div class="member-card-dept">${deptLabels[m.dept]}</div>
+        <div class="member-card-base">📍 ${m.base || '—'}</div>
+        <div class="member-card-scores">${getDots(m.scores[0])}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderList(data) {
+  const body = document.getElementById('memberListBody');
+  body.innerHTML = data.map(m => {
+    const el = engLevels[m.eng] || 'mid';
+    const rlClass = {ceo:'ceo',mgr:'mgr',ldr:'ldr',mbr:'mbr'}[m.role];
+    const avgScore = m.scores.filter(s=>s>0).length > 0 ? (m.scores.reduce((a,b)=>a+b,0)/m.scores.filter(s=>s>0).length).toFixed(1) : '—';
+    return `
+    <div class="list-row" onclick="openDetail(${m.id})">
+      <div class="list-cell name">
+        <div class="mini-avatar" style="background:${deptColors[m.dept]}">${getInitial(m.name)}</div>
+        ${m.name}
+      </div>
+      <div class="list-cell"><span class="dept-tag ${m.dept}">${deptLabels[m.dept]}</span></div>
+      <div class="list-cell"><span class="role-tag ${rlClass}">${roleLabels[m.role]}</span></div>
+      <div class="list-cell base-tag">📍 ${m.base || '—'}</div>
+      <div class="list-cell"><span class="eng-tag ${el}">${m.eng}</span></div>
+      <div class="list-cell"><strong style="color:var(--accent)">${avgScore}</strong></div>
+    </div>`;
+  }).join('');
+}
+
+function renderSkillTable(data) {
+  const body = document.getElementById('skillTableBody');
+  const skillNames = ['セールス力','マネジメント','企画・マーケ','コミュニケーション'];
+  body.innerHTML = data.slice(0,14).map(m => {
+    const avg = m.scores.filter(s=>s>0).length>0 ? Math.round(m.scores.reduce((a,b)=>a+b,0)/m.scores.filter(s=>s>0).length) : 0;
+    const lvClass = ['lv0','lv1','lv2','lv3','lv4','lv5'][avg] || 'lv0';
+    return `<tr onclick="openDetail(${m.id})" style="cursor:pointer">
+      <td><div style="display:flex;align-items:center;gap:8px;">
+        <div class="mini-avatar" style="background:${deptColors[m.dept]}">${getInitial(m.name)}</div>
+        <strong>${m.name}</strong>
+      </div></td>
+      <td><span class="dept-tag ${m.dept}">${deptLabels[m.dept]}</span></td>
+      ${m.scores.map(s => `<td>${s > 0 ? getSkillDots(s) : '<span style="color:#ccc;font-size:11px">未入力</span>'}</td>`).join('')}
+      <td>${avg > 0 ? `<span class="skill-level ${lvClass}">Lv${avg}</span>` : '<span style="color:#ccc;font-size:11px">—</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderOnon() {
+  const grid = document.getElementById('ononGrid');
+  grid.innerHTML = onon1s.map(o => `
+    <div class="onon-card" onclick="alert('Notion 1on1記録DBに移動します')">
+      <div class="onon-header">
+        <div>
+          <div class="onon-name">${o.member}</div>
+          <div class="onon-date">📅 ${o.date} · 上長: ${o.upper}</div>
+        </div>
+        <div class="onon-cond">${o.cond}</div>
+      </div>
+      <div class="onon-body">${o.memo}</div>
+      <div class="onon-footer">
+        <span class="onon-tag">📋 ${o.agenda.substring(0,20)}...</span>
+        <span class="onon-tag" style="background:#D1FAE5;color:#065F46">✅ 実施済み</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderEval() {
+  const body = document.getElementById('evalBody');
+  body.innerHTML = evalData.map(e => {
+    const statusClass = e.status === 'done' ? 'done' : 'pending';
+    const statusLabel = e.status === 'done' ? '✅ 確定' : '⏳ 未開始';
+    const gradeHtml = e.grade ? `<div class="eval-grade ${e.grade}">${e.grade}</div>` : '<span style="color:#ccc">—</span>';
+    return `<div class="eval-row">
+      <div class="eval-cell"><div class="mini-avatar" style="background:var(--accent);margin-right:6px">${getInitial(e.name)}</div><strong>${e.name}</strong></div>
+      <div class="eval-cell">${e.period}</div>
+      <div class="eval-cell"><span class="eval-score">${e.self || '—'}</span></div>
+      <div class="eval-cell"><span class="eval-score">${e.upper || '—'}</span></div>
+      <div class="eval-cell">${gradeHtml}</div>
+      <div class="eval-cell"><span class="eval-status-chip ${statusClass}">${statusLabel}</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ===== DETAIL PANEL =====
+function openDetail(id) {
+  const m = members.find(x => x.id === id);
+  if (!m) return;
+  const scoreLabels = ['セールス力','マネジメント','企画・マーケ','コミュニケーション'];
+  const avgScore = m.scores.filter(s=>s>0).length>0 ? (m.scores.reduce((a,b)=>a+b,0)/m.scores.filter(s=>s>0).length).toFixed(1) : '—';
+
+  const radarData = {
+    labels: scoreLabels,
+    datasets: [{
+      data: m.scores.map(s => s || 0),
+      backgroundColor: 'rgba(46,117,182,0.15)',
+      borderColor: '#2E75B6',
+      borderWidth: 2,
+      pointBackgroundColor: '#2E75B6',
+    }]
+  };
+
+  document.getElementById('detailContent').innerHTML = `
+    <div class="detail-hero">
+      <div class="detail-avatar">${getInitial(m.name)}</div>
+      <div class="detail-name">${m.name}</div>
+      <div class="detail-role-dept">${roleLabels[m.role]} · ${deptLabels[m.dept]}</div>
+      <div class="detail-meta">
+        <div class="detail-meta-item">📍 ${m.base || '未設定'}</div>
+        <div class="detail-meta-item">⭐ 平均スコア ${avgScore}</div>
+        <div class="detail-meta-item">${m.eng}</div>
+      </div>
+    </div>
+    <div class="detail-body">
+      <div class="detail-section">
+        <div class="detail-section-title">基本情報</div>
+        <div class="detail-grid">
+          <div class="detail-field"><label>担当業務</label><p class="${m.bio ? '' : 'empty'}">${m.bio || '未入力'}</p></div>
+          <div class="detail-field"><label>キャリアメモ</label><p class="${m.career ? '' : 'empty'}">${m.career || '未入力'}</p></div>
+          <div class="detail-field"><label>強み</label><p class="empty">未入力（Notionで編集）</p></div>
+          <div class="detail-field"><label>成長ポイント</label><p class="empty">未入力（Notionで編集）</p></div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">スキルレーダー</div>
+        <div class="chart-wrap"><canvas id="radarChart" style="max-height:200px"></canvas></div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">スキルスコア詳細</div>
+        <div class="skill-bars">
+          ${scoreLabels.map((label, i) => `
+          <div class="skill-bar-row">
+            <div class="skill-bar-label">${label}</div>
+            <div class="skill-bar-track">
+              <div class="skill-bar-fill" style="width:${m.scores[i]*20}%"></div>
+            </div>
+            <div class="skill-bar-score">${m.scores[i] || '—'}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">Claudeによる育成提案</div>
+        <div class="text-box">${generateAINote(m)}</div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('detailOverlay').classList.add('open');
+
+  setTimeout(() => {
+    const ctx = document.getElementById('radarChart');
+    if (ctx && m.scores.some(s=>s>0)) {
+      new Chart(ctx, {
+        type: 'radar',
+        data: radarData,
+        options: {
+          scales: { r: { min: 0, max: 5, ticks: { stepSize: 1, font: { size: 10 } } } },
+          plugins: { legend: { display: false } },
+          elements: { line: { tension: 0.1 } }
+        }
+      });
+    }
+  }, 50);
+}
+
+function generateAINote(m) {
+  if (m.scores.every(s=>s===0)) return '⚠️ スキルデータが未入力です。1on1や評価面談のタイミングでスコアを入力することをおすすめします。';
+  const max = Math.max(...m.scores);
+  const min = Math.min(...m.scores.filter(s=>s>0));
+  const labels = ['セールス力','マネジメント力','企画・マーケ力','コミュニケーション力'];
+  const maxLabel = labels[m.scores.indexOf(max)];
+  const minLabel = labels[m.scores.indexOf(min)];
+  const avg = (m.scores.reduce((a,b)=>a+b,0)/m.scores.filter(s=>s>0).length).toFixed(1);
+  return `✨ <strong>${m.name}</strong>さんの平均スコアは <strong>${avg}/5.0</strong> です。特に <strong>「${maxLabel}」</strong> が高く（${max}点）、強みとして活かせます。<strong>「${minLabel}」</strong>（${min}点）の強化が成長のカギになりそうです。Q2の1on1でキャリア目標と合わせて育成計画を話し合うことをおすすめします。`;
+}
+
+function closeDetail(e) {
+  if (e.target === document.getElementById('detailOverlay')) {
+    document.getElementById('detailOverlay').classList.remove('open');
+  }
+}
+
+// ===== FILTERS =====
+let activeFilter = 'all';
+
+function filterByDept(el, dept) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  activeFilter = dept;
+  applyFilter();
+}
+
+function filterMembers(query) {
+  applyFilter(query);
+}
+
+function applyFilter(query='') {
+  const q = query.toLowerCase();
+  const filtered = members.filter(m => {
+    const deptMatch = activeFilter === 'all' || m.dept === activeFilter;
+    const nameMatch = !q || m.name.toLowerCase().includes(q);
+    return deptMatch && nameMatch;
+  });
+  document.getElementById('memberCount').textContent = `${filtered.length}名 · カオナビ参考のメンバー管理`;
+  renderGallery(filtered);
+  renderList(filtered);
+}
+
+// ===== VIEW TOGGLE =====
+function switchMemberView(mode) {
+  galleryMode = mode === 'gallery';
+  document.getElementById('galleryBtn').classList.toggle('active', galleryMode);
+  document.getElementById('listBtn').classList.toggle('active', !galleryMode);
+  document.getElementById('memberGallery').style.display = galleryMode ? 'grid' : 'none';
+  document.getElementById('memberList').classList.toggle('show', !galleryMode);
+}
+
+// ===== NAVIGATION =====
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.textContent.trim().includes({ dashboard:'ダッシュボード', members:'メンバー一覧', skills:'スキルマップ', onon:'1on1記録', goals:'目標管理', eval:'評価' }[name])) n.classList.add('active');
+  });
+  const titles = { dashboard:'📊 ダッシュボード', members:'👤 メンバープロフィール', skills:'💪 スキルマップ', onon:'💬 1on1記録', goals:'🎯 目標管理（OKR）', eval:'⭐ 評価管理' };
+  document.getElementById('headerTitle').textContent = titles[name] || '';
+}
+
+// ===== CLAUDE PROMPT =====
+function claudePrompt() {
+  const prompts = [
+    '「河内の今日の1on1をまとめてNotionに登録して」',
+    '「セールス部門のスキルギャップを分析して」',
+    '「来月フォローが必要なメンバーは？」',
+    '「Q2の目標をメンバーに設定するための質問を考えて」',
+  ];
+  alert('Claudeに依頼できる例:\n\n' + prompts.join('\n') + '\n\nCoworkモードのチャットで直接話しかけてください！');
+}
+
+// ===== CHART =====
+function initDeptChart() {
+  const ctx = document.getElementById('deptChart');
+  if (!ctx) return;
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['セールス (11)', 'マーケ・広報 (5)', '管理 (3)', '経営 (2)', '未設定 (7)'],
+      datasets: [{
+        data: [11, 5, 3, 2, 7],
+        backgroundColor: ['#F97316','#EAB308','#3B82F6','#8B5CF6','#D1D5DB'],
+        borderWidth: 2,
+        borderColor: '#fff',
+      }]
+    },
+    options: {
+      cutout: '65%',
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 8 } } }
+    }
+  });
+}
+
+// ===== INIT =====
+window.onload = function() {
+  renderGallery(members);
+  renderList(members);
+  renderSkillTable(members);
+  renderOnon();
+  renderEval();
+  initDeptChart();
+};
+</script>
+
+</body>
+</html>
